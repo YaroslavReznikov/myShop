@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <div class="inputWrapper">
+        <form id="addGoodForm">
+            <div class="input">
+                <input type="file" id="fileInput" placeholder="Picture">
+            </div>
+            <div class="input">
+                <input type="text" id="goodName" placeholder="GoodName">
+            </div>
+            <div class="input">
+                <input type="text" id="des" placeholder="description">
+            </div>
+            <div class="input">
+                <input type="text" id="price" placeholder="good price">
+            </div>
+            <div class="buttonHolder">
+                <button type="button" onclick="addGood()">Add</button>
+            </div>
+        </form>
+    </div>
+</body>
+<script>
+    function addGood() {
+        const fileInput = document.getElementById('fileInput');
+        const file = fileInput.files[0]; // get the actual file object
+
+        const goodName = document.getElementById('goodName').value;
+        const description = document.getElementById('des').value;
+        const price =parseFloat( document.getElementById('price').value);
+        // Now you can use the provided function to send the form data
+        let formData = new FormData();
+        formData.append('picture', file);
+        formData.append('goodName', goodName);
+        formData.append('description', description);
+        formData.append('price', price);
+
+        fetch('http://localhost:3000/addGood', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => console.log(data))
+        .catch(error => console.error('Error:', error));
+    }
+</script>
+</html>
