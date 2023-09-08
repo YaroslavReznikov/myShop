@@ -87,12 +87,7 @@ app.post('/login', (req, res) => {
 });
 
 app.post("/signUp", async  (req, res) => {
-    const { username, email, password, passwordCopy } = req.body;
-
-    if (password !== passwordCopy) {
-        return res.status(400).json({ message: 'Passwords are not same' });
-    }
-    
+    const { username, email, password } = req.body;
     const isValidEmail = await isEmailValid(email);
     if (!isValidEmail.valid) {
         return res.status(400).json({ message: "Email is invalid" });

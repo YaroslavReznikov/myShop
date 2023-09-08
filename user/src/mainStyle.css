@@ -1,20 +1,12 @@
-*{
-    margin: 0;
-    font-family:"Poppins", sans-serif;
-    padding:0;
-    box-sizing: border-box;
 
-    
-}
-body{
-    background:#c0bcbc;
-
-}
-.Wrapper {
+.MainWrapper {
     display: flex;
+    background:#c0bcbc;
     align-items: center;
     justify-content: center;
-    background:#fff;
+
+    height: 100%;
+    width: 100%;
 
 }
 
@@ -48,8 +40,6 @@ body{
 
 .user-seen-part{
     display: flex;
-    align-items: center;
-    justify-content: center;
 }
 .goods-field{
     width: 60%;
