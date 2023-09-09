@@ -22,14 +22,17 @@
 
 
 }
-
-.userDatacon{
+.add-good-btn{
+    color: transparent;
+    border: none;
+}
+.userPersonalData{
     position: relative;
-    left: 200px; /* moves the element 20 pixels to the left */
+    left: 200px;
 }
 
 .logOutbtn{
-    left: 900px; /* moves the element 20 pixels to the left */
+    left: 900px;
 }
 .userbtn .btn{
     border: none;
@@ -44,4 +47,11 @@
 .goods-field{
     width: 60%;
     background-color: #fff;
+
+}
+
+.user-seen-part{
+    align-items: center;
+    justify-content: center;
+    background-color:rgb(168, 164, 164);
 }
