@@ -36,19 +36,12 @@ app.use(cookieParser());
 
 app.use(express.static(path.join(__dirname)));
 
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname,'logInPage.html'));
-});
-app.get('/signUp', (req, res) => {
-    console.log('GET /signUp triggered');
-    res.send('Signup page');
-});
 async function isEmailValid(email) {
     return emailValidator.validate(email)
   }
 app.post('/login', (req, res) => {
     const { email, password } = req.body;
-    connection.query('SELECT hashedPassword, ID, username, mail FROM registration WHERE mail = ?', [email], (error, results) => {
+    connection.query('SELECT HashedPassword, UserID, Username, Email FROM User WHERE Email = ?', [email], (error, results) => {
         if (error) {
             console.error(error);
             res.status(500).json('Internal Server Error');
@@ -60,10 +53,10 @@ app.post('/login', (req, res) => {
             return;
         }
 
-        const hashedPasswordFromDatabase = results[0].hashedPassword;
-        const ID = results[0].ID;
-        const username = results[0].username;
-        const email = results[0].mail;
+        const hashedPasswordFromDatabase = results[0].HashedPassword;
+        const ID = results[0].UserID;
+        const username = results[0].Username;
+        const email = results[0].Email;
         bcrypt.compare(password, hashedPasswordFromDatabase, (err, isMatch) => {
             if (err) {
                 console.error(err);
@@ -93,16 +86,18 @@ app.post("/signUp", async  (req, res) => {
         return res.status(400).json({ message: "Email is invalid" });
     }
 
-    connection.query("SELECT ID FROM registration WHERE mail = ?", [email], (err, result) => {
+    connection.query("SELECT UserID FROM User WHERE Email = ?", [email], (err, result) => {
         if (err) {
+            console.log(1);
             return res.status(500).json({ message: "Internal server error" });
         }
         if (result.length != 0) {
             return res.status(400).json({ message: "This email is already used" });
         }
 
-        connection.query("SELECT ID FROM registration WHERE username = ?", [username], (err, result) => {
+        connection.query("SELECT UserID FROM User WHERE Username = ?", [username], (err, result) => {
             if (err) {
+                console.log(err);
                 return res.status(500).json({ message: "Internal server error" });
             }
             if (result.length != 0) {
@@ -112,10 +107,11 @@ app.post("/signUp", async  (req, res) => {
             bcrypt.hash(password, saltRounds, function(err, hash) {
                 if (err) {
                     console.error(err);
+                    console.log(3);
                     return res.status(500).json({ message: 'Internal Server Error' });
                 }
 
-                connection.query("INSERT INTO registration(username, mail, hashedPassword, registrationDateTime) VALUES(?, ?, ?, NOW())", [username, email, hash], (err, results) => {
+                connection.query("INSERT INTO User(Username, Email, HashedPassword) VALUES(?, ?, ?)", [username, email, hash], (err, results) => {
                     if (err) {
                         console.error(err);
                         return res.status(500).json({ message: 'Database error' });
@@ -136,10 +132,11 @@ const storage = multer.diskStorage({
   });
 const upload = multer({ storage: storage });
 app.post("/addGood", upload.single('picture'), (req, res) => {
-    const goodName = req.body.goodName;
+    const productName = req.body.goodName;
     const description = req.body.description;
     const goodPrice = req.body.price;
     const userId = req.cookies.userID;
+
     if (!req.file) {
         return res.status(400).json({ message: 'File upload failed' });
     }
@@ -147,19 +144,33 @@ app.post("/addGood", upload.single('picture'), (req, res) => {
     const pictureLocation = req.file.path;
 
     connection.query(
-        "INSERT INTO shopGoods (userID, pictureLocation, goodName, description, price) VALUES (?, ?, ?, ?, ?)",
-        [userId, pictureLocation, goodName, description, goodPrice],
+        "INSERT INTO Product (UserID, ProductName, Description, Price) VALUES (?, ?, ?, ?)",
+        [userId, productName, description, goodPrice],
         (err, results) => {
             if (err) {
-                console.log(err);
+                console.error(err);
                 return res.status(500).json({ message: 'Database error' });
             }
-            res.json({ success: true });
+
+            const productId = results.insertId;  // Getting the product ID from the INSERT query result
+
+            connection.query(
+                "INSERT INTO ProductPicture (ProductID, PicturePath) VALUES (?, ?)",
+                [productId, pictureLocation],
+                (err, results) => {
+                    if (err) {
+                        console.error(err);
+                        return res.status(500).json({ message: 'Database error' });
+                    }
+
+                    res.json({ success: true });
+                }
+            );
         }
     );
 });
 app.get("/getDatabase", (req, res) => {
-    connection.query("SELECT * FROM shopGoods", (error, results) => {
+    connection.query("SELECT * FROM Product", (error, results) => {  // Corrected table name
         if (error) {
             console.error(error);
             return res.status(500).json('Internal Server Error');
