@@ -1,3 +1,6 @@
+
+
+
 document.addEventListener('DOMContentLoaded', function() {
     
     function search(searchValue) {
@@ -7,31 +10,14 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById("search-bar").addEventListener("keydown", function(event) {
         if (event.keyCode === 13) { 
             search(document.getElementById('search-bar').value);
-            console.log("enter was pressed");
         }
     });
 
-    function logOut() {
-        var result = confirm("Are you sure you want to log out?");
-        if (result) {
-            console.log("Logging out...");
-            const cookies = document.cookie.split(";");
 
-            for (let i = 0; i < cookies.length; i++) {
-                const cookie = cookies[i];
-                const eqPos = cookie.indexOf("=");
-                const name = eqPos > -1 ? cookie.substr(0, eqPos) : cookie;
-                document.cookie = name + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT";
-            }
-            window.location.href = "logInPage.html";
-        } else {
-            console.log("User chose not to logout.");
-        }
-    }
 
     window.logOut = logOut;
 
-    function getDatabase(search = "") {
+function getDatabase(search = "") {
         const url = `http://localhost:3000/getDatabase?search=${encodeURIComponent(search)}`;
         
         fetch(url, {
@@ -53,7 +39,6 @@ document.addEventListener('DOMContentLoaded', function() {
             console.error('Error fetching data:', error);
         });
     }
-
     getDatabase(document.getElementById("search-bar").value);
 
     function getCookie(name) {
@@ -64,4 +49,5 @@ document.addEventListener('DOMContentLoaded', function() {
 
     var username = getCookie('username');
     document.getElementById("username").innerText = username;
+
 });

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import LogIn from "./logIn";
-import './signUpStyle.css';  // Assuming the CSS is in the same directory
+import './signUpStyle.css';
+import IMAGES from "./Pictures"
 function SignUp() {
     const [username, setUsername] = useState('');
     const [email, setEmail] = useState('');
@@ -34,7 +35,7 @@ function SignUp() {
     return <LogIn/>
   }
   return (
-    <div className="generalWrapperForSignUp">
+    <div className="generalWrapperForSignUp" style={{backgroundsize: "cover", backgroundImage:`url(${IMAGES.logInPicture})`}}>
         <div className="signUpWrapper">
             <div className="text-field">
                 <h1 className="text">Sign up</h1>

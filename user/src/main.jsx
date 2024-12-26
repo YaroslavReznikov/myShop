@@ -1,16 +1,23 @@
 import React, { useState, useEffect } from "react";
 import './mainStyle.css';
 import LogIn from "./logIn";
-
+import {getUserName } from "./GetFunctions"
 function MainPage() {
     const [searchValue, setSearchValue] = useState("");
     const [username, setUsername] = useState("");
-    const [showLogIn, setShowLogIn] = useState(false);
-
+    const [showLogInPage, setShowLogInPage] = useState(false);
+   
     useEffect(() => {
         getDatabase(searchValue);
-        let savedUsername = getCookie('username');
-        setUsername(savedUsername);
+        const fetchUsername = async () => {
+            try {
+                const name = await getUserName(); 
+                setUsername(name);
+            } catch (error) {
+                console.error('Error fetching username:', error);
+            }
+        };
+        fetchUsername();
     }, [searchValue]);
 
     const handleKeyDown = (event) => {
@@ -26,16 +33,10 @@ function MainPage() {
     const logOut = () => {
         const result = window.confirm("Are you sure you want to log out?");
         if (result) {
-            const cookies = document.cookie.split(";");
-
-            for (let i = 0; i < cookies.length; i++) {
-                const cookie = cookies[i];
-                const eqPos = cookie.indexOf("=");
-                const name = eqPos > -1 ? cookie.substr(0, eqPos) : cookie;
-                document.cookie = name + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT";
+            localStorage.clear();
+            setShowLogInPage(true);
             }
-            setShowLogIn(true);
-        } else {
+         else {
             console.log("User chose not to logout.");
         }
     };
@@ -62,28 +63,22 @@ function MainPage() {
             console.error('Error fetching data:', error);
         });  
     };
-    const getCookie = (name) => {
-        var value = "; " + document.cookie;
-        var parts = value.split("; " + name + "=");
-        if (parts.length == 2) return decodeURIComponent(parts.pop().split(";").shift());
-    };
-    return (
+    return showLogInPage ? (<LogIn></LogIn>)
+    :(
         <>
-            {showLogIn ? (
-                <LogIn />
-            ) : (
-                <div className="globalWrapper">
+           
+            <div className="globalWrapper">
                 <div className="MainWrapper">
                     <div className="add-good-btn">
                         <button>
-                            add good
+                            add manager
                         </button>
                     </div>
                     <div className="searchBar">
                         <input 
                             type="text" 
                             id="search-bar" 
-                            placeholder="search bar"
+                            placeholder="find worker"
                             value={searchValue}
                             onChange={e => setSearchValue(e.target.value)}
                             onKeyDown={handleKeyDown} 
@@ -94,17 +89,17 @@ function MainPage() {
                             <label>{username}</label>
                         </div>
                         <div className="userbtn">
-                            <button className="btn" onClick={logOut}>Log out</button>
+                            <button  className="btn" onClick={logOut}>Log out</button>
                         </div>
                     </div>
                 </div>
                 <div className="user-seen-part">
                     <div className="goods-field">
-                        <label>There should be data</label>
+                        <label>Workers</label>
                     </div>
                 </div>
             </div>
-            )}
+            
         </>
     );
 }

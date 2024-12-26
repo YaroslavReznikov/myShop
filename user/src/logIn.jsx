@@ -1,70 +1,115 @@
-import React, { useState, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import './loginInStyle.css';
-import SignUp from "./signUp";
+import IMAGES from "./Pictures";
 import MainPage from "./main";
+import { Link } from "react-router-dom";
+
 function LogIn() {
     const emailRef = useRef();
     const passwordRef = useRef();
+    const [showMainPage, setShowMainPage] = useState(false);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState("");
+
+    // Ensure the checkbox state is boolean and not null/undefined
+    const initialRememberState = localStorage.getItem("remember") === "true"; 
+    const [checkbox, setCheckBox] = useState(initialRememberState);
+
+    useEffect(() => {
+        const token = localStorage.getItem("authToken");
+        if (!localStorage.getItem("remember")) {
+            localStorage.setItem("remember", false);
+        }
+        fetch('/loginWithToken', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}` 
+            },
+        }).then(response => response.json())
+        .then(data => {
+            console.log(data.message);
+            if (data.success){
+                setShowMainPage(true);
+            }
+        })
+    }, []);
 
     const loginUser = () => {
         const email = emailRef.current.value;
         const password = passwordRef.current.value;
+        const rememberMe = checkbox;
 
-        fetch('/login', {
+        setLoading(true);
+        setError("");
+
+        fetch('/loginWithoutToken', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ email, password })
+            body: JSON.stringify({ email, password, rememberMe })
         })
         .then(response => response.json())
         .then(data => {
-            if (data.success) {
-                setshowMain(true);
+            setLoading(false);
+            if (data.token) {
+                localStorage.setItem('authToken', data.token);
+                setShowMainPage(true);
             } else {
-                console.log(data.message);
+                setError(data.message);
                 alert(data.message);
-          }
-      });
+            }
+        })
+        .catch((error) => {
+            setLoading(false);
+            setError("An error occurred. Please try again.");
+            console.error("Error:", error);
+        });
     }
 
-    const [showSignUp, setShowSignUp] = useState(false);
-    const [showMain, setshowMain] = useState(false);
-    if (showMain){
-        return <MainPage />;
-    }
-    if (showSignUp) {
-        return <SignUp />;
+    const cookiesHandle = () => {
+        const newRemember = !checkbox;
+        localStorage.setItem("remember", newRemember.toString()); // Store it as a string
+        setCheckBox(newRemember);
     }
 
-    return (
-        <div className="logInWrapper">
+    return showMainPage ? (
+        <MainPage />
+    ) : (
+        <div className="logInWrapper" style={{ backgroundSize: "cover", backgroundImage: `url(${IMAGES.logInPicture})` }}>
             <div className="Wrapper">
                 <form>
                     <h1>Login</h1>
+                    {error && <p className="error-message">{error}</p>}
                     <div className="input-box">
-                        <input type="email" placeholder="email" ref={emailRef} required />
+                        <input type="email" placeholder="Email" ref={emailRef} aria-label="Email" required />
                     </div>
                     <div className="input-box">
-                        <input type="password" placeholder="Password" ref={passwordRef} required />
+                        <input type="password" placeholder="Password" ref={passwordRef} aria-label="Password" required />
                     </div>
                     <div className="remember-forgot">
                         <label>
-                            <input type="checkbox" /> Remember me
+                            <input 
+                                type="checkbox" 
+                                onChange={cookiesHandle} 
+                                checked={checkbox || false} // Ensure checked is a boolean value
+                            /> Remember me
                         </label>
-                        <span>Forgot password</span> {/* Changed from <a> to <span> */}
+                        <span role="button" tabIndex="0">Forgot password?</span>
                     </div>
                     <button
                         type="button"
                         className="btn"
-                        onClick={loginUser} // Simplified this since email and password are now using useRef
+                        onClick={loginUser}
+                        disabled={loading}
                     >
-                        Login
+                        {loading ? "Logging in..." : "Login"}
                     </button>
                     <div className="register-link">
                         <p>
                             Don't have an account? 
-                            <button onClick={() => setShowSignUp(true)}>Register</button>
+                            <Link to='/sign_up_page'>Register</Link>
                         </p>
                     </div>
                 </form>

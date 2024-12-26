@@ -5,11 +5,12 @@ const path = require('path');
 const bcrypt = require('bcrypt');
 const mysql = require('mysql');
 const cors = require('cors');
-const Cookie = require('cookie');
+const Cookies = require('universal-cookie');
 const formidable = require('formidable');
 const cookieParser = require('cookie-parser');
 const multer = require('multer');
 const emailValidator = require('deep-email-validator');
+const jwt = require('jsonwebtoken');
 
 const saltRounds = 10;
 
@@ -39,46 +40,55 @@ app.use(express.static(path.join(__dirname)));
 async function isEmailValid(email) {
     return emailValidator.validate(email)
   }
-app.post('/login', (req, res) => {
-    const { email, password } = req.body;
-    connection.query('SELECT HashedPassword, UserID, Username, Email FROM User WHERE Email = ?', [email], (error, results) => {
+app.post('/loginWithoutToken', (req, res) => {
+    const { email, password, rememberMe } = req.body;
+
+    // Query to get user details based on email
+    connection.query('SELECT HashedPassword, UserID, Username FROM User WHERE Email = ?', [email], (error, results) => {
         if (error) {
             console.error(error);
-            res.status(500).json('Internal Server Error');
-            return;
+            return res.status(500).json({ message: 'Internal Server Error' });
         }
 
+        // Check if user exists
         if (results.length === 0) {
-            res.status(401).json('Unauthorized'); // No user found
-            return;
+            return res.status(401).json({ message: 'Unauthorized: No user found' });
         }
 
         const hashedPasswordFromDatabase = results[0].HashedPassword;
-        const ID = results[0].UserID;
-        const username = results[0].Username;
-        const email = results[0].Email;
+
+        // Compare provided password with stored hashed password
         bcrypt.compare(password, hashedPasswordFromDatabase, (err, isMatch) => {
             if (err) {
                 console.error(err);
-                res.status(500).json('Internal Server Error');
-                return;
+                return res.status(500).json({ message: 'Internal Server Error' });
             }
 
             if (isMatch) {
-                
-                res.cookie("userID", ID);
-                res.cookie("username", username);
-                res.cookie("useremail", email);
-                res.json({ message: 'Login successful', success: true });
-                return;
+                const expiresIn = rememberMe ? '7d' : '1h';
+                const token = jwt.sign(
+                    { userID: results[0].UserID, username: results[0].Username },
+                    "1", 
+                    { expiresIn: expiresIn } // Token expiration
+                );
+
+                res.json({ message: 'Login successful', success: true, token });
             } else {
-                res.status(401).json({ message: 'Unauthorized' });
-                return;
+                res.status(401).json({ message: 'Unauthorized: Incorrect password' });
             }
         });
     });
 });
+app.post('/loginWithToken', (req, res) => {
+    const token = req.headers['authorization']?.split(' ')[1]; // Extract token after "Bearer "
+    jwt.verify(token, "1", (err, decoded) => {
+        if (err) {
+            return res.status(401).json({ success: false, message: 'Unauthorized: Invalid token' });
+        }
 
+        res.json({ success: true, message: 'Access granted', user: decoded });
+    });
+});
 app.post("/signUp", async  (req, res) => {
     const { username, email, password } = req.body;
     const isValidEmail = await isEmailValid(email);
@@ -124,10 +134,10 @@ app.post("/signUp", async  (req, res) => {
 });
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
-      cb(null, init.fileSave); // specify the folder where files will be saved
+      cb(null, init.fileSave); 
     },
     filename: (req, file, cb) => {
-      cb(null, file.originalname); // save the file with its original name
+      cb(null, file.originalname);
     }
   });
 const upload = multer({ storage: storage });
@@ -179,7 +189,16 @@ app.get("/getDatabase", (req, res) => {
         res.json(results);
     });
 });
-
+app.get("/getUserName", (req, res) => {
+    const token = req.headers['authorization']?.split(' ')[1]; 
+    jwt.verify(token, "1", (err, decoded) => {
+        if (err) {
+            return res.status(401).json({ success: false, message: 'Unauthorized: Invalid token' });
+        }
+        const username = decoded.username;
+        return res.json({ success: true, username: username });
+    });
+});
 app.listen(5000, () =>{
     console.log("server is running on port 5000")
 })
